@@ -1,4 +1,4 @@
-TITLE: 【Sprint】③ Work
+TITLE: 【Sprint】② Work
 
 # Sprint Work
 
