@@ -12,43 +12,38 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Create Milestone and Issues
+    - name: Create Milestone
+      id: create_milestone
       uses: actions/github-script@v7
       with:
         script: |
-          const version = "${{ inputs.version }}";
-          const desc = "${{ inputs.description || '' }}";
-
           const milestone = await github.rest.issues.createMilestone({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            title: version,
-            description: desc
+            title: "${{ inputs.version }}",
+            description: "${{ inputs.description || '' }}"
           });
 
-          const milestoneNumber = milestone.data.number;
+          core.setOutput("milestone_number", milestone.data.number);
 
-          const templates = [
-            {
-              title: `Sprint ${version} 定義`,
-              body: `# Sprint Definition\n\n- Version: ${version}\n- Goal:\n`
-            },
-            {
-              title: `Sprint ${version} 実作業`,
-              body: `# Sprint Work\n\n- [ ] Implementation complete\n- [ ] Merged into main\n`
-            },
-            {
-              title: `Sprint ${version} タグ作成`,
-              body: `# Tag Creation\n\n- [ ] Ready to tag\n- [ ] Tag pushed\n`
-            }
+    - name: Create Sprint Issues
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const milestoneNumber = "${{ steps.create_milestone.outputs.milestone_number }}";
+          const version = "${{ inputs.version }}";
+
+          const issues = [
+            `Sprint ${version} 定義`,
+            `Sprint ${version} 実作業`,
+            `Sprint ${version} タグ作成`
           ];
 
-          for (const issue of templates) {
+          for (const title of issues) {
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: issue.title,
-              body: issue.body,
+              title: title,
               milestone: milestoneNumber
             });
           }
