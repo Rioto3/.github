@@ -33,7 +33,7 @@ runs:
           const milestoneNumber = milestone.data.number;
 
           // Template directory (relative to action root)
-          const templateDir = path.join(process.cwd(), '.github/actions/create-sprint/templates');
+          const templateDir = path.join(process.env.GITHUB_ACTION_PATH, 'templates');
 
           const files = fs.readdirSync(templateDir)
             .filter(f => f.endsWith('.md') && f !== 'README.md');
