@@ -1,0 +1,30 @@
+name: Create Sprint
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version (e.g. v1.4.0)"
+        required: true
+        type: string
+      description:
+        description: "Short sprint description"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - name: Create Sprint
+        uses: Rioto3/.github/.github/actions/create-sprint@main
+        with:
+          version: ${{ github.event.inputs.version }}
+          description: ${{ github.event.inputs.description }}
