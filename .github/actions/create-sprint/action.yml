@@ -12,37 +12,43 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Create Milestone
+    - name: Create Milestone and Issues
       uses: actions/github-script@v7
       with:
         script: |
+          const version = "${{ inputs.version }}";
+          const desc = "${{ inputs.description || '' }}";
+
           const milestone = await github.rest.issues.createMilestone({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            title: "${{ inputs.version }}",
-            description: "${{ inputs.description || '' }}"
+            title: version,
+            description: desc
           });
 
-          core.setOutput("milestone_number", milestone.data.number);
+          const milestoneNumber = milestone.data.number;
 
-    - name: Create Sprint Issues
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const milestoneNumber = context.steps[0].outputs.milestone_number;
-          const version = "${{ inputs.version }}";
-
-          const issues = [
-            `Sprint ${version} 定義`,
-            `Sprint ${version} 実作業`,
-            `Sprint ${version} タグ作成`
+          const templates = [
+            {
+              title: `Sprint ${version} 定義`,
+              body: `# Sprint Definition\n\n- Version: ${version}\n- Goal:\n`
+            },
+            {
+              title: `Sprint ${version} 実作業`,
+              body: `# Sprint Work\n\n- [ ] Implementation complete\n- [ ] Merged into main\n`
+            },
+            {
+              title: `Sprint ${version} タグ作成`,
+              body: `# Tag Creation\n\n- [ ] Ready to tag\n- [ ] Tag pushed\n`
+            }
           ];
 
-          for (const title of issues) {
+          for (const issue of templates) {
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: title,
+              title: issue.title,
+              body: issue.body,
               milestone: milestoneNumber
             });
           }
