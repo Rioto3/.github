@@ -1,4 +1,4 @@
-TITLE: Sprint Definition
+TITLE: 【Sprint】① Definition
 
 # Sprint Definition
 
