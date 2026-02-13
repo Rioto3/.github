@@ -1,0 +1,37 @@
+name: Replicate File
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_owner:
+        description: "Target repository owner"
+        required: true
+        type: string
+      target_repo:
+        description: "Target repository name"
+        required: true
+        type: string
+      overwrite:
+        description: "Overwrite if exists (true/false)"
+        required: false
+        default: "false"
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  replicate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Replicate initialize-request.yml
+        uses: Rioto3/.github/.github/actions/replicate-file@main
+        with:
+          source_owner: Rioto3
+          source_repo: .github
+          source_path: .github/workflows/initialize-request.yml
+          target_owner: ${{ github.event.inputs.target_owner }}
+          target_repo: ${{ github.event.inputs.target_repo }}
+          overwrite: ${{ github.event.inputs.overwrite }}
