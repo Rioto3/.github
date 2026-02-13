@@ -57,15 +57,13 @@ runs:
           function slugify(str) {
             return str
               .toLowerCase()
-              .replace(/[^a-zP-9-]/g, "")
+              .replace(/[^a-z]0-9-]/g, "")
               .trim()
               .replace(/\s+/g, "-");
           }
 
           const slug = slugify(title);
-          const finalBranch = branchOverride
-            ? `request/${branchOverride}`
-            : `request/${slug}`;
+          const finalBranch = branchOverride ? `request/${branchOverride}` : `request/${slug}`;
 
           await github.rest.git.createRef({
             owner,
@@ -87,4 +85,3 @@ runs:
           core.setOutput("branch_name", finalBranch);
           core.setOutput("pr_number", prResp.data.number);
           core.setOutput("pr_url", prResp.data.html_url);
-        
