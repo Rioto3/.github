@@ -1,0 +1,35 @@
+name: Initialize Request
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: "Natural language request title"
+        required: true
+        type: string
+      intent:
+        description: "Optional detailed background or intent"
+        required: false
+        type: string
+      branch_name:
+        description: "Optional branch name override (without prefix)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  issues: write
+
+ jobs:
+  initialize:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - name: Initialize Request
+        uses: Rioto3/.github/.github/actions/create-request@main
+        with:
+          title: ${{ github.event.inputs.title }}
+          intent: ${{ github.event.inputs.intent }}
+          branch_name: ${{ github.event.inputs.branch_name }}
