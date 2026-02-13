@@ -44,6 +44,8 @@ runs:
 
           const milestoneNumber = milestoneResp.data.number;
 
+
+          // 1. default branch 取得
           const repoInfo = await github.rest.repos.get({
             owner,
             repo
@@ -51,28 +53,42 @@ runs:
 
           const defaultBranch = repoInfo.data.default_branch;
 
-          const refData = await github.rest.git.getRef({
+          // 2. default branch の SHA 取得
+          const { data: refData } = await github.rest.git.getRef({
             owner,
             repo,
-            ref: `[heads/${defaultBranch}]
+            ref: `heads/${defaultBranch}`
           });
 
-          const baseSha = refData.data.object.sha;
+          const baseSha = refData.object.sha;
 
+          // 3. branch 名決定
           function slugify(str) {
             return str
               .toLowerCase()
-              .replace(/[^a-z\-9\\s-]/g, "")
+              .replace(/[^a-z0-9\s-]/g, "")
               .trim()
               .replace(/\s+/g, "-");
           }
 
           const slug = slugify(title);
+
           const finalBranch = branchOverride
             ? `request/${branchOverride}`
             : `request/${slug}`;
 
-          await github.rest.git.createRef({});
+          // 4. branch 作成
+          await github.rest.git.createRef({
+            owner,
+            repo,
+            ref: `refs/heads/${finalBranch}`,
+            sha: baseSha
+          });
+
+
+
+
+
 
           await github.rest.issues.create({});
 
