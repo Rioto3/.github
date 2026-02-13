@@ -15,8 +15,11 @@ inputs:
 outputs:
   milestone_number:
     description: "Created Milestone number"
+    value: ${{ steps.initialize.outputs.milestone_number }}
+
   branch_name:
     description: "Created branch name"
+    value: ${{ steps.initialize.outputs.branch_name }}
 
 runs:
   using: "composite"
