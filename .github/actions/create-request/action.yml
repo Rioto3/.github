@@ -98,7 +98,46 @@ runs:
 
 
 
-          await github.rest.issues.create({});
+          // テンプレート読み込みのためリポジトリからファイル取得
+          async function fetchTemplate(path) {
+            const resp = await github.rest.repos.getContent({
+              owner,
+              repo,
+              path,
+              ref: finalBranch
+            });
+            return Buffer.from(resp.data.content, "base64").toString("utf8");
+          }
+
+          function parseTemplate(raw) {
+            const lines = raw.split("\n");
+            const titleLine = lines.find(l => l.startsWith("TITLE:"));
+            const titleSuffix = titleLine ? titleLine.replace("TITLE:", "").trim() : "";
+            const body = lines.filter(l => !l.startsWith("TITLE:")).join("\n").trimStart();
+            return { titleSuffix, body };
+          }
+
+          const startRaw = await fetchTemplate(".github/actions/create-request/templates/request-start.md");
+          const completionRaw = await fetchTemplate(".github/actions/create-request/templates/request-completion.md");
+
+          const start = parseTemplate(startRaw);
+          const completion = parseTemplate(completionRaw);
+
+          await github.rest.issues.create({
+            owner,
+            repo,
+            title: `${start.titleSuffix}: ${title}`,
+            body: start.body,
+            milestone: milestoneNumber
+          });
+
+          await github.rest.issues.create({
+            owner,
+            repo,
+            title: `${completion.titleSuffix}: ${title}`,
+            body: completion.body,
+            milestone: milestoneNumber
+          });
 
           core.setOutput("milestone_number", milestoneNumber);
           core.setOutput("branch_name", finalBranch);
