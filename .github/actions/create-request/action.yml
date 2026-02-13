@@ -1,5 +1,5 @@
 name: "Initialize Request"
-description: "Create a new branch and a Draft Pull Request (PR-centric model)"
+description: "Create a new branch, add .create-request marker, and open a Draft Pull Request"
 
 inputs:
   title:
@@ -72,6 +72,17 @@ runs:
             sha: baseSha
           });
 
+          const markerContent = Buffer.from(finalBranch + "\n").toString("base64");
+
+          await github.rest.repos.createOrUpdateFileContents({
+            owner,
+            repo,
+            path: ".create-request",
+            message: "chore: initialize request branch",
+            content: markerContent,
+            branch: finalBranch
+          });
+
           const prResp = await github.rest.pulls.create({
             owner,
             repo,
@@ -85,3 +96,4 @@ runs:
           core.setOutput("branch_name", finalBranch);
           core.setOutput("pr_number", prResp.data.number);
           core.setOutput("pr_url", prResp.data.html_url);
+        
