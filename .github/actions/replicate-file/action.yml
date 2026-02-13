@@ -1,6 +1,5 @@
 name: "Replicate File"
 description: "Copy a file from one repository to another (direct write to default branch)"
-
 inputs:
   source_owner:
     description: "Source repository owner"
@@ -21,7 +20,6 @@ inputs:
     description: "Overwrite if the file already exists (true/false)"
     required: false
     default: "false"
-
 runs:
   using: "composite"
   steps:
@@ -36,16 +34,12 @@ runs:
         OVERWRITE: ${{ inputs.overwrite }}
       with:
         script: |
-          const { Octokit } = require("@octokit/rest");
           const owner = process.env.SOURCE_OWNER;
           const repo = process.env.SOURCE_REPO;
           const path = process.env.SOURCE_PATH;
-
           const targetOwner = process.env.TARGET_OWNER;
           const targetRepo = process.env.TARGET_REPO;
-          const overwrite = process.env.OVERRITY === "true";
-
-          const github = context.octokit;
+          const overwrite = process.env.OVERWRITE === "true";
 
           // 1. Get source file
           const sourceRes = await github.rest.repos.getContent({
@@ -53,11 +47,11 @@ runs:
             repo,
             path
           });
-
+          
           if (sourceRes.data.type !== "file") {
             throw new Error("Source path is not a file");
           }
-
+          
           const content = sourceRes.data.content;
           const fileSha = sourceRes.data.sha;
 
@@ -66,13 +60,12 @@ runs:
             owner: targetOwner,
             repo: targetRepo
           });
-
           const defaultBranch = repoInfo.data.default_branch;
 
           // 3. Check if file exists in target
           let existingSha = null;
           try {
-            const existingRes = await github.rest.repos.getContent({}, {
+            const existingRes = await github.rest.repos.getContent({
               owner: targetOwner,
               repo: targetRepo,
               path
@@ -91,10 +84,10 @@ runs:
             owner: targetOwner,
             repo: targetRepo,
             path,
-            message: `chore: replicate ${path} from ${owner/repo} `,
+            message: `chore: replicate ${path} from ${owner}/${repo}`,
             content,
             branch: defaultBranch,
             ...(existingSha ? { sha: existingSha } : {})
           });
-
+          
           core.info("Replication completed.");
