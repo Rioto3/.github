@@ -1,30 +1,33 @@
 name: "Initialize Request"
-description: "Step 1: Create Milestone, branch, and Request Issues (Start/Completion)"
+description: "Create a new branch and a Draft Pull Request (PR-centric model)"
 
 inputs:
   title:
-    description: "Natural language request title"
+    description: "Request title"
     required: true
   intent:
-    description: "Optional detailed intent or background"
+    description: "Optional detailed description"
     required: false
   branch_name:
     description: "Optional branch name override (without prefix)"
     required: false
 
 outputs:
-  milestone_number:
-    description: "Created Milestone number"
-    value: ${{ steps.initialize.outputs.milestone_number }}
-
   branch_name:
     description: "Created branch name"
     value: ${{ steps.initialize.outputs.branch_name }}
+  pr_number:
+    description: "Created Pull Request number"
+    value: ${{ steps.initialize.outputs.pr_number }}
+  pr_url:
+    description: "Created Pull Request URL"
+    value: ${{ steps.initialize.outputs.pr_url }}
 
 runs:
   using: "composite"
   steps:
-    - name: "Initialize Request"
+    - name: "Initialize"
+      id: initialize
       uses: actions/github-script@v7
       env:
         INPUT_TITLE: ${{ inputs.title }}
@@ -36,56 +39,34 @@ runs:
         script: |
           const owner = process.env.REPO_OWNER;
           const repo = process.env.REPO_NAME;
-
           const title = process.env.INPUT_TITLE;
-          if (!title) throw new Error("title input is required");
-
-          const intent = process.env.INPUT_INTENT;
+          if (!title) throw new Error("title is required");
+          const intent = process.env.INPUT_INTENT || "";
           const branchOverride = process.env.INPUT_BRANCH_NAME;
 
-          const milestoneResp = await github.rest.issues.createMilestone({
-            owner,
-            repo,
-            title,
-            description: intent || ""
-          });
-
-          const milestoneNumber = milestoneResp.data.number;
-
-
-          // 1. default branch 取得
-          const repoInfo = await github.rest.repos.get({
-            owner,
-            repo
-          });
-
+          const repoInfo = await github.rest.repos.get({ owner, repo });
           const defaultBranch = repoInfo.data.default_branch;
 
-          // 2. default branch の SHA 取得
           const { data: refData } = await github.rest.git.getRef({
             owner,
             repo,
             ref: `heads/${defaultBranch}`
           });
-
           const baseSha = refData.object.sha;
 
-          // 3. branch 名決定
           function slugify(str) {
             return str
               .toLowerCase()
-              .replace(/[^a-z0-9\s-]/g, "")
+              .replace(/[^a-zP-9-]/g, "")
               .trim()
               .replace(/\s+/g, "-");
           }
 
           const slug = slugify(title);
-
           const finalBranch = branchOverride
             ? `request/${branchOverride}`
             : `request/${slug}`;
 
-          // 4. branch 作成
           await github.rest.git.createRef({
             owner,
             repo,
@@ -93,51 +74,17 @@ runs:
             sha: baseSha
           });
 
-
-
-
-
-
-          // テンプレート読み込みのためリポジトリからファイル取得
-          async function fetchTemplate(path) {
-            const resp = await github.rest.repos.getContent({
-              owner,
-              repo: ".github",
-              path,
-              ref: "main"
-            });
-            return Buffer.from(resp.data.content, "base64").toString("utf8");
-          }
-
-          function parseTemplate(raw) {
-            const lines = raw.split("\n");
-            const titleLine = lines.find(l => l.startsWith("TITLE:"));
-            const titleSuffix = titleLine ? titleLine.replace("TITLE:", "").trim() : "";
-            const body = lines.filter(l => !l.startsWith("TITLE:")).join("\n").trimStart();
-            return { titleSuffix, body };
-          }
-
-          const startRaw = await fetchTemplate(".github/actions/create-request/templates/request-start.md");
-          const completionRaw = await fetchTemplate(".github/actions/create-request/templates/request-completion.md");
-
-          const start = parseTemplate(startRaw);
-          const completion = parseTemplate(completionRaw);
-
-          await github.rest.issues.create({
+          const prResp = await github.rest.pulls.create({
             owner,
             repo,
-            title: `${start.titleSuffix}: ${title}`,
-            body: start.body,
-            milestone: milestoneNumber
+            title,
+            head: finalBranch,
+            base: defaultBranch,
+            body: intent,
+            draft: true
           });
 
-          await github.rest.issues.create({
-            owner,
-            repo,
-            title: `${completion.titleSuffix}: ${title}`,
-            body: completion.body,
-            milestone: milestoneNumber
-          });
-
-          core.setOutput("milestone_number", milestoneNumber);
           core.setOutput("branch_name", finalBranch);
+          core.setOutput("pr_number", prResp.data.number);
+          core.setOutput("pr_url", prResp.data.html_url);
+        
