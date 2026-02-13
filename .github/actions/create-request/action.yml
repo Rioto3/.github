@@ -31,7 +31,10 @@ runs:
           const owner = context.repo.owner;
           const repo = context.repo.repo;
 
-          const title = core.getInput("title", { required: true });
+          const title = core.getInput("title");
+          if (!title) throw new Error("title input is required");
+
+
           const intent = core.getInput("intent");
           const branchOverride = core.getInput("branch_name");
 
