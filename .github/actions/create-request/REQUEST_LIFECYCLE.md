@@ -1,102 +1,105 @@
-# REQUEST_LIFECYCLE.md
+# PR-Centric Request Architecture
 
-# Request Lifecycle Architecture
+This document defines the PR-centric management model used in this repository.
 
-This document defines the operational and conceptual design of the Request Lifecycle system.
-
-The goal is to ensure that:
-
-- Human intent is captured clearly.
-- AI and human share the same understanding.
-- Structure remains human-designed.
-- The system remains usable even without AI.
+It is intended for management-level AI systems that interact with GitHub. Implementation-focused AI only needs to fulfill the PR content.
 
 ---
 
-## Core Principle
+## Current Operational Status
 
-**1 Request = 2 Issues**
+This repository is now operating under the PR-centric request model.
 
-Every Request has:
- 
-- Request Start
-- Request Completion
+All new requests are initialized as structured Draft Pull Requests via GitHub Actions.
 
-Both issues are created at the beginning of the lifecycle and belong to the same Milestone.
-
-The Milestone acts as:
- 
-- A grouping mechanism
-- A request identifier
- - A Projects-compatible visibility unit
-
-This system is not sprint-based and not version-driven.
+Legacy Issue/Milestone-based lifecycle mechanisms are decommissioned.
 
 ---
 
-## Two-Step Operation Model
+## 1. Core Principle
 
-### Step 1: Request Initialization
+**PR = Request**
 
-This step is handled by the GitHub Action.
+This repository does not use:
 
-Inputs:
-- title (required)
-- intent (optional)
-- branch_name (optional)
+- Milestones
+- Start/Completion Issues
+- Lifecycle ceremony
 
-Action behavior:
- 
-- Create a Milestone using the given title.
-- Generate a description from title and intent.
-- Create a new branch from the default branch (usually main).
+ A draft Pull Request represents:
 
-Important:
- 
-- No Issues are created in this step.
-- The purpose is recognition alignment, not full materialization.
+- Management intent (Background)
+- Intended implementation strategy (Approach)
 
-Human responsibility after Step 1:
-
-- Verify the Milestone description.
-- Ensure the intent is porrectly understood.
-- Verify the new pranch exists and is correctly named.
-
-This step ensures that AI and human share the same understanding before structure is generated.
-
-### Step 2: Request Materialization
-
-This step is done through discussion and template-based creation.
-
-Actions:
-
-- Create Request Start using request-start.md
-- Create Request Completion using request-completion.md
-- Attach both issues to the Milestone.
-
-This step requires that the AI understands the lifecycle concept defined in this document.
+The PR is the single management unit.
 
 ---
 
-## Lifecycle Closure Rules
+## 2. Initialization Mechanism
 
-- Request Completion is filled by the implementation AI.
-- A human reviews the content.
+Requests are initialized via:
 
-After Completion is closed:
-- Request Start must also be closed.
+`.github/actions/create-request`
 
-The Request is then considered fully resolved.
+as called by:
+
+``.github/workflows/initialize-request.yml``
+
+When triggered, the Action:
+
+1. Creates a new branch from the default branch.
+2. Adds a `.create-request` marker file containing the branch name.
+3. Opens a structured Draft Pull Request.
+
+By adding the marker file, a difference is guaranteed, allowing the PR to be created immediately.
 
 ---
 
-## Design Intention
+## 3. Structured PR Format
 
-This system intentionally:
+Draft PR bodies are generated with the following structure:
 
-- Separates recognition from materialization.
-- Prevents AI assumption-driven over-generation.
- - Enforces template-based consistency.
-- Accumulates evaluation and improvement knowledge over time.
+```markdown
+## Background
 
-The main branch must remain current and stable, since all new request branches are created from the default branch.
+// management context
+
+## Approach
+
+// implementation strategy
+```
+
+Guidelines:
+
+ - Inputs support Markdown.
+- Use only `###` or smaller headings inside sections.
+- Do not redefine ``## Background` or `## Approach` at the top level.
+
+This structure is designed for management-level AI.
+
+---
+
+## 4. Completion Model
+
+A request is considered complete when:
+
+- The implementation is reviewed.
+- The Pr is merged (squash merge recommended).
+
+No additional closing artifacts exist.
+
+---
+
+## 5. Adoption in Another Repository
+
+An AI with GitHub interface can adopt this model by:
+
+- Copying `.github/actions/create-request` directory.
+- Copying `.github/workflows/initialize-request.yml` file.
+- Enabling `pull-requests: write` permissions for GitHub Actions.
+
+Upon copy, the repository supports:
+
+ - Structured request initialization
+- PR-based management
+- AI-aligned operation
