@@ -18,14 +18,14 @@ on:
 
 permissions:
   contents: write
-  issues: write
+  pull-requests: write
 
 jobs:
   initialize:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      issues: write
+      pull-requests: write
     steps:
       - name: Initialize Request
         uses: Rioto3/.github/.github/actions/create-request@main
