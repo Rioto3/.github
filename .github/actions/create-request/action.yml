@@ -1,5 +1,5 @@
 name: "Initialize Request"
-description: "Create a new branch, add .create-request marker, and open a structured Draft Pull Request"
+description: "Create a new branch with an empty commit and open a structured Draft Pull Request"
 
 inputs:
   title:
@@ -45,70 +45,24 @@ runs:
           const repo = process.env.REPO_NAME;
           const title = process.env.INPUT_TITLE;
           if (!title) throw new Error("title is required");
-
           const background = process.env.INPUT_BACKGROUND || "";
           const approach = process.env.INPUT_APPROACH || "";
           const branchOverride = process.env.INPUT_BRANCH_NAME;
-
           const repoInfo = await github.rest.repos.get({ owner, repo });
           const defaultBranch = repoInfo.data.default_branch;
-
-          const { data: refData } = await github.rest.git.getRef({
-            owner,
-            repo,
-            ref: `heads/${defaultBranch}`
-          });
+          const { data: refData } = await github.rest.git.getRef({ owner, repo, ref: `heads/${defaultBranch}` });
           const baseSha = refData.object.sha;
-
-          function slugify(str) {
-            return str
-              .toLowerCase()
-              .replace(/[^a-z0-9-]/g, "")
-              .trim()
-              .replace(/\s+/g, "-");
-          }
-
-          const slug = slugify(title);
+          const { data: baseCommit } = await github.rest.git.getCommit({ owner, repo, commit_sha: baseSha });
+          const baseTreeSha = baseCommit.tree.sha;
+          const slug = title.toLowerCase().replace(/[^a-z0-9-]/g, "").trim().replace(/\s+/g, "-");
           const finalBranch = branchOverride ? `request/${branchOverride}` : `request/${slug}`;
-
-          await github.rest.git.createRef({
-            owner,
-            repo,
-            ref: `refs/heads/${finalBranch}`,
-            sha: baseSha
-          });
-
-          const markerContent = Buffer.from(finalBranch + "\n").toString("base64");
-
-          await github.rest.repos.createOrUpdateFileContents({
-            owner,
-            repo,
-            path: ".create-request",
-            message: "chore: initialize request branch",
-            content: markerContent,
-            branch: finalBranch
-          });
-
+          await github.rest.git.createRef({ owner, repo, ref: `refs/heads/${finalBranch}`, sha: baseSha });
+          const { data: emptyCommit } = await github.rest.git.createCommit({ owner, repo, message: "chore: initialize request", tree: baseTreeSha, parents: [baseSha] });
+          await github.rest.git.updateRef({ owner, repo, ref: `heads/${finalBranch}`, sha: emptyCommit.sha });
           let body = "";
-
-          if (background) {
-            body += "## Background\n\n" + background + "\n\n";
-          }
-
-          if (approach) {
-            body += "## Approach\n\n" + approach + "\n";
-          }
-
-          const prResp = await github.rest.pulls.create({
-            owner,
-            repo,
-            title,
-            head: finalBranch,
-            base: defaultBranch,
-            body: body,
-            draft: true
-          });
-
+          if (background) body += "## Background\n\n" + background + "\n\n";
+          if (approach) body += "## Approach\n\n" + approach + "\n";
+          const prResp = await github.rest.pulls.create({ owner, repo, title, head: finalBranch, base: defaultBranch, body, draft: true });
           core.setOutput("branch_name", finalBranch);
           core.setOutput("pr_number", prResp.data.number);
           core.setOutput("pr_url", prResp.data.html_url);
