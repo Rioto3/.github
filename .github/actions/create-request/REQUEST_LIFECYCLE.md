@@ -68,11 +68,22 @@ Guidelines:
 
 - Inputs support Markdown.
 - Use only `###` or smaller headings inside sections.
-- Do not redefine ``## Background` or `## Approach` at the top level.
+- Do not redefine `## Background` or `## Approach` at the top level.
 
-This structure is intented for management-level AI.
+This structure is intended for management-level AI.
 
 The implementation AI only needs to fulfill the PR.
+
+### 3.1 AI Session Initialization
+
+At the start of each session, the implementation AI should:
+
+1. Read `.create-request` to identify the working branch name.
+2. Find the open Draft PR associated with that branch.
+3. Read the PR body (`## Background` and `## Approach`) as the authoritative spec for this request.
+4. Treat the PR body as higher priority than any other context, second only to the most recent conversation.
+
+The `.create-request` file is the entry point. Without reading it first, the AI cannot reliably orient itself to the current request.
 
 ---
 
@@ -83,7 +94,27 @@ A request is considered complete when:
 - The implementation is reviewed.
 - The PR is merged (squash merge recommended).
 
-#here are no additional closing artifacts.
+There are no additional closing artifacts.
+
+### 4.1 Default Implementation Strategy
+
+Unless otherwise specified in the PR `## Approach` section, the implementation AI should follow this default strategy:
+
+1. **Interface first** — define API signatures, schemas, and response shapes before writing storage logic.
+2. **Test before connect** — write tests against the interface using in-memory or mock backends (no external services required).
+3. **Connect storage last** — replace mock backends with real storage only after tests pass against the interface.
+
+This order minimizes the cost of schema changes and keeps tests stable across implementation phases.
+
+### 4.2 Completion Flow
+
+When implementation is complete, the AI should:
+
+1. Confirm all tests pass.
+2. Move the PR from Draft → Ready for Review (remove draft status).
+3. Notify the user that the PR is ready to squash merge.
+
+The AI does not merge autonomously. The final merge action belongs to the user.
 
 ---
 
@@ -91,10 +122,8 @@ A request is considered complete when:
 
 An AI with GitHub interface can adopt this model by:
 
-1. Copying ``.github/actions/create-request`
-. Directory
-2. Copying ``.github/workflows/initialize-request.yml`
-file
+1. Copying `.github/actions/create-request` directory
+2. Copying `.github/workflows/initialize-request.yml` file
 3. Enabling pull-requests: write permissions for GitHub Actions.
 
 Upon copy, the repository automatically supports:
