@@ -43,10 +43,10 @@ and the workflow:
 When triggered, the Action:
 
 1. Creates a new branch from the default branch.
-2. Adds a `.create-request` marker file containing the branch name.
+2. Creates an empty commit to establish a commit difference.
 3. Opens a structured Draft Pull Request.
 
-The marker file ensures that a commit difference exists so that the PR can be created immediately.
+The empty commit ensures that a commit difference exists so that the PR can be created immediately, without requiring file changes.
 
 ---
 
@@ -78,12 +78,26 @@ The implementation AI only needs to fulfill the PR.
 
 At the start of each session, the implementation AI should:
 
-1. Read `.create-request` to identify the working branch name.
-2. Find the open Draft PR associated with that branch.
+1. Identify the current working branch name (via git or context).
+2. Query GitHub API to find the open PR where head branch matches the current branch.
 3. Read the PR body (`## Background` and `## Approach`) as the authoritative spec for this request.
 4. Treat the PR body as higher priority than any other context, second only to the most recent conversation.
 
-The `.create-request` file is the entry point. Without reading it first, the AI cannot reliably orient itself to the current request.
+The PR body is the authoritative entry point. The AI must retrieve and read it via GitHub API at session start to reliably orient itself to the current request.
+
+**Note**: This GitHub API read operation is an exception to the local-first principle (see Section 6). Reading PR metadata does not modify the remote repository and is necessary for session initialization.
+
+#### Example GitHub API Query
+
+```bash
+# Get current branch
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+# Find PR with this head branch
+gh pr list --head "$BRANCH" --state open --json number,title,body
+```
+
+The AI should parse the `body` field to extract `## Background` and `## Approach` sections.
 
 ---
 
@@ -110,11 +124,14 @@ This order minimizes the cost of schema changes and keeps tests stable across im
 
 When implementation is complete, the AI should:
 
-1. Confirm all tests pass.
-2. Move the PR from Draft → Ready for Review (remove draft status).
-3. Notify the user that the PR is ready to squash merge.
+1. Confirm all tests pass locally.
+2. Ensure all local commits are pushed to the remote branch.
+3. Move the PR from Draft → Ready for Review (remove draft status) via GitHub API.
+4. Notify the user that the PR is ready to squash merge.
 
 The AI does not merge autonomously. The final merge action belongs to the user.
+
+**Note**: Step 3 is one of the few operations where the AI directly interacts with the remote repository via GitHub API (see Section 6).
 
 ---
 
@@ -131,3 +148,86 @@ Upon copy, the repository automatically supports:
 - Structured request initialization
 - PR-based management
 - AI-aligned operation
+
+---
+
+## 6. Local-First Implementation Principle
+
+**Default Operating Mode: Local Repository**
+
+The implementation AI operates primarily on the local repository clone:
+
+- All code changes are made locally first
+- Tests are run locally
+- Commits are created locally
+- Changes are pushed to remote only when ready
+
+**Remote Operations Are Exceptional**
+
+The AI does NOT directly modify remote repository files via GitHub API by default.
+
+Remote operations (via GitHub API) are only used for:
+
+- **Reading** PR body, issues, discussions, or other metadata
+- **Updating** PR status (Draft → Ready for Review)
+- **Creating/updating** PR comments or descriptions when explicitly needed for communication
+- **No file creation or modification** on remote repository via API
+
+**Explicitly Prohibited Remote Operations**
+
+The following operations should NEVER be performed directly on the remote repository via GitHub API:
+
+- Creating or updating files in the repository
+- Deleting files in the repository
+- Creating commits directly via API
+- Any operation that bypasses local git workflow
+
+**Why Local-First?**
+
+- Standard git workflow alignment
+- Enables local testing before push
+- Avoids race conditions with other contributors
+- Maintains git history integrity
+- Allows rollback via standard git operations
+- Preserves proper commit authorship and timestamps
+
+**Typical Workflow**
+
+```
+1. Clone or update local repository
+   ↓
+2. Fetch and checkout working branch (created by initialize-request workflow)
+   ↓
+3. Read PR body via GitHub API (Session Initialization - Section 3.1)
+   ↓
+4. Implement changes locally
+   ↓
+5. Run tests locally
+   ↓
+6. Commit locally with descriptive messages
+   ↓
+7. Push to remote branch
+   ↓
+8. Update PR status via GitHub API if completing (Section 4.2)
+```
+
+**Exception: When to Ask User**
+
+Before performing ANY remote repository operation beyond reading metadata, the AI should ask the user explicitly, except for:
+
+- Reading public repository data (PR body, issues, commits, file contents for reference)
+- Updating PR status as part of the defined completion flow (Section 4.2)
+- Adding comments to PR/issues when requested by user
+
+**Local Repository Location**
+
+When working in environments with filesystem access:
+
+- The local repository is typically in the current working directory
+- The AI should verify repository state with `git status` and `git remote -v`
+- The working branch should match the one referenced in the PR
+
+When working in environments without filesystem access:
+
+- The AI should explicitly inform the user that local-first workflow cannot be followed
+- The AI should ask the user how to proceed (e.g., provide code snippets for manual application)
