@@ -1,0 +1,11 @@
+{
+  "name": "Initialize Request",
+  "description": "Create a PR-centric request with structured background and approach sections",
+  "iconName": "git-pull-request",
+  "categories": [
+    "Automation"
+  ],
+  "filePatterns": [
+    "initialize-request.yml"
+  ]
+}
