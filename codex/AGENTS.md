@@ -1,10 +1,10 @@
 ## Execution Contract (Mandatory)
 
 1. Approval gate
-- 実作業（ファイル編集・コマンド実行・API更新・PR更新）は必ず事前承認制。
+- 実作業（ファイル編集・コマンド実行・API更新・PR更新）は、作業方針を整理して提示した上で実行する。
 - `push` は承認不要（ユーザー指定ブランチへの反映として常時許可）。
 - 実行前に「目的/手順/影響範囲/対象ブランチ」を提示する。
-- 未承認作業、依頼外作業、想定外の拡張は実行禁止（ただし `push` は本契約の例外規定に従う）。
+- 依頼外作業、想定外の拡張は実行禁止（ただし `push` は本契約の例外規定に従う）。
 
 2. Request source of truth
 - セッション開始時、現在ブランチに対応する open PR を特定し、PR本文 `## Background` / `## Approach` を要求仕様として読む。
@@ -18,14 +18,14 @@
 - `merge` はユーザーのみ実行。AIは自律 `merge` しない。
 
 4. Working mode
-- 原則は local-first 実装（実装・テスト・commitはローカル）。
-- ただし方針確認・状況確認は remote参照を優先可（PR/Issue/branch/commit等の読取）。
-- GitHub APIでのリモートファイル直接変更（create/update/delete/commit API）は禁止。
+- 原則は remote-first 実装（対象ブランチへの直接変更を許可・推奨）。
+- 方針確認・状況確認は remote参照を優先（PR/Issue/branch/commit等の読取）。
+- GitHub APIでのリモートファイル直接変更（create/update/delete/commit API）は許可。
 - リモート更新操作のうち `push` は承認不要。PR状態変更・コメント投稿等は承認後のみ。
 
 5. Change unit
-- 作業は小さいバッチに分割し、各バッチごとに「提案→承認→実行→結果報告」。
-- ただし `push` は承認不要のため「対象ブランチ明示→実行→結果報告」で実施可。
+- 作業は小さいバッチに分割し、各バッチごとに「方針整理→実行→結果報告」。
+- `push` は承認不要のため「対象ブランチ明示→実行→結果報告」で実施。
 - 報告は「実施内容/差分要点/検証結果/未実施事項」を簡潔に提示。
 
 6. Repository model alignment
@@ -57,9 +57,9 @@
 - 最小確認項目: `owner/repo` または GitHub URL。
 
 4. Execution gate with remote-first
-- 実作業は原則として事前承認制。
-- 承認前は、必要最小限のリモート読取のみ行い、変更操作は行わない。
-- ただし `push` は承認不要（対象ブランチ明示を必須）。
+- 実作業は「作業方針整理後」に実行可（都度承認は不要）。
+- 変更操作は対象ブランチに限定して実行する。
+- `push` は承認不要（対象ブランチ明示を必須）。
 - `push` 以外のリモート更新（PR更新/コメント投稿等）は承認後のみ。
 
 5. Branch interpretation
