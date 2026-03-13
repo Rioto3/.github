@@ -33,3 +33,9 @@ In practice, that means:
 - changes to `create-request` can affect all repositories using the template
 
 If a repository needs a fully self-contained implementation, the Action logic would also need to be copied or versioned separately rather than referenced from this repository.
+
+## Version Bump
+
+`version-bump.yml` is a standalone workflow template for repositories that want a manual tag creation workflow without introducing a separate shared Action.
+
+It is intended to be added to a target repository through the workflow template UI and run via `workflow_dispatch` on that repository's default branch.
