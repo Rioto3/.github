@@ -21,3 +21,5 @@ Importantly, this action does *not*:
  Those are created in Step 2 through template-based discussion and materialization.
 
 This separation ensures that human and AI are aligned on the intent before full structure is generated.
+
+The lifecycle specification itself is documented in `docs/REQUEST_LIFECYCLE.md`.

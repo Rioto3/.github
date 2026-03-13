@@ -1,0 +1,11 @@
+{
+  "name": "Version Bump",
+  "description": "Create the next git tag from a selected major, minor, or patch increment",
+  "iconName": "tag",
+  "categories": [
+    "Automation"
+  ],
+  "filePatterns": [
+    "version-bump.yml"
+  ]
+}
